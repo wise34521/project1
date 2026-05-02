@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>청년고용률 대시보드 · 시군구 분석</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:#0a0d14; --surface:#111520; --surface2:#181d2c;
+  --border:rgba(255,255,255,0.07);
+  --accent:#4f8ef7; --accent2:#f7794f; --accent3:#4ff7b8; --accent4:#f7d94f;
+  --text:#e8ecf4; --text2:#8b93a8; --text3:#4a5168;
+  --radius:14px; --mono:'DM Mono',monospace; --sans:'Noto Sans KR',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(79,142,247,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(79,142,247,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+header{position:relative;padding:56px 40px 48px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(79,142,247,0.06) 0%,transparent 100%)}
+.header-label{font-family:var(--mono);font-size:11px;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:16px;opacity:.8}
+header h1{font-size:clamp(28px,4vw,48px);font-weight:900;line-height:1.1;letter-spacing:-1.5px;background:linear-gradient(135deg,#e8ecf4 0%,#8b93a8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+header h1 span{color:var(--accent);-webkit-text-fill-color:initial}
+.header-sub{margin-top:12px;font-size:14px;color:var(--text2);font-weight:300}
+.header-badges{margin-top:20px;display:flex;gap:10px;flex-wrap:wrap}
+.badge{font-family:var(--mono);font-size:11px;padding:4px 12px;border-radius:20px;border:1px solid}
+.badge-blue{border-color:var(--accent);color:var(--accent);background:rgba(79,142,247,0.08)}
+.badge-orange{border-color:var(--accent2);color:var(--accent2);background:rgba(247,121,79,0.08)}
+.badge-green{border-color:var(--accent3);color:var(--accent3);background:rgba(79,247,184,0.08)}
+.container{max-width:1400px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+.section{padding:40px 0 20px}
+.section-title{font-family:var(--mono);font-size:11px;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;gap:12px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;position:relative;overflow:hidden;transition:transform .2s,border-color .2s;animation:fadeUp .5s ease both}
+.kpi-card:hover{transform:translateY(-2px);border-color:rgba(79,142,247,0.3)}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi-card.blue::before{background:var(--accent)}
+.kpi-card.orange::before{background:var(--accent2)}
+.kpi-card.green::before{background:var(--accent3)}
+.kpi-card.yellow::before{background:var(--accent4)}
+.kpi-label{font-size:11px;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px}
+.kpi-value{font-family:var(--mono);font-size:32px;font-weight:500;line-height:1;margin-bottom:6px}
+.kpi-value.blue{color:var(--accent)}.kpi-value.orange{color:var(--accent2)}.kpi-value.green{color:var(--accent3)}.kpi-value.yellow{color:var(--accent4)}
+.kpi-sub{font-size:12px;color:var(--text3)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;animation:fadeUp .5s ease both}
+.card-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.card-title-text{display:flex;align-items:center;gap:10px}
+.card-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:900px){.grid-2{grid-template-columns:1fr}}
+.rank-table{width:100%;border-collapse:collapse}
+.rank-table th{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+.rank-table td{padding:10px 14px;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.03);transition:background .15s}
+.rank-table tr:hover td{background:rgba(79,142,247,0.04)}
+.rank-num{font-family:var(--mono);color:var(--text3);font-size:12px}
+.rank-name{font-weight:500}
+.rank-sido{font-size:11px;color:var(--text3);margin-top:2px}
+.rank-val{font-family:var(--mono);font-weight:500}
+.rank-bar-wrap{width:80px}
+.rank-bar{height:4px;border-radius:2px;background:rgba(255,255,255,0.06);overflow:hidden}
+.rank-bar-fill{height:100%;border-radius:2px;transition:width .6s ease}
+.trend-up{color:var(--accent3);font-family:var(--mono);font-size:12px}
+.trend-dn{color:var(--accent2);font-family:var(--mono);font-size:12px}
+.trend-eq{color:var(--text3);font-family:var(--mono);font-size:12px}
+.search-wrap{position:relative;flex:1;min-width:200px;max-width:340px}
+.search-wrap input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 16px 10px 38px;color:var(--text);font-family:var(--sans);font-size:13px;outline:none;transition:border-color .2s}
+.search-wrap input:focus{border-color:var(--accent)}
+.search-wrap::before{content:'🔍';position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:12px;opacity:.5}
+select,.btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 16px;color:var(--text);font-family:var(--sans);font-size:13px;outline:none;cursor:pointer;transition:border-color .2s,background .2s}
+select:focus,.btn:hover{border-color:var(--accent);background:rgba(79,142,247,0.08)}
+.btn-active{border-color:var(--accent);background:rgba(79,142,247,0.15);color:var(--accent)}
+.explorer-controls{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+.compare-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.tag{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:12px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;transition:all .2s}
+.tag.selected{border-color:var(--accent);background:rgba(79,142,247,0.15)}
+.tag-dot{width:7px;height:7px;border-radius:50%}
+.tag-x{font-size:14px;line-height:1;opacity:.5;transition:opacity .2s}
+.tag:hover .tag-x{opacity:1}
+.sido-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.sido-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px 14px;cursor:pointer;transition:all .2s;text-align:center}
+.sido-card:hover{transform:translateY(-2px);border-color:rgba(79,142,247,0.4)}
+.sido-card-name{font-size:13px;font-weight:700;margin-bottom:8px}
+.sido-card-val{font-family:var(--mono);font-size:22px;font-weight:500}
+.sido-card-bar{margin-top:8px;height:3px;border-radius:2px;background:rgba(255,255,255,0.06);overflow:hidden}
+.sido-card-fill{height:100%;border-radius:2px}
+.table-scroll{max-height:400px;overflow-y:auto}
+.table-scroll::-webkit-scrollbar{width:4px}
+.table-scroll::-webkit-scrollbar-thumb{background:var(--text3);border-radius:2px}
+.tabs{display:flex;gap:4px;background:var(--surface2);padding:4px;border-radius:10px;width:fit-content}
+.tab{padding:7px 18px;border-radius:7px;font-size:13px;cursor:pointer;border:none;background:transparent;color:var(--text2);transition:all .2s;font-family:var(--sans)}
+.tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,0.3)}
+.stat-row{display:flex;gap:24px;margin-top:12px;flex-wrap:wrap}
+.stat-item{font-size:12px;color:var(--text2)}
+.stat-item strong{font-family:var(--mono);color:var(--text)}
+canvas{max-width:100%}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<header>
+  <div class="container">
+    <div class="header-label">대한민국 노동통계 · 2021–2025</div>
+    <h1>청년고용률<span> 시·군·구</span> 대시보드</h1>
+    <p class="header-sub">228개 시·군·구 반기별 청년 고용률 종합 분석 — 지역별 추이, 순위, 격차 비교</p>
+    <div class="header-badges">
+      <span class="badge badge-blue">228개 지역</span>
+      <span class="badge badge-orange">10개 시점 (반기)</span>
+      <span class="badge badge-green">2021 — 2025</span>
+    </div>
+  </div>
+</header>
+<div class="container">
+  <div class="section">
+    <div class="section-title">핵심 지표</div>
+    <div class="kpi-grid" id="kpiGrid"></div>
+  </div>
+  <div class="section">
+    <div class="section-title">광역시도별 평균 청년고용률</div>
+    <div class="card">
+      <div class="card-title"><div class="card-title-text"><span class="card-dot" style="background:var(--accent)"></span>시도별 5년 평균 고용률 비교 (클릭하면 해당 시도 지역 검색)</div></div>
+      <div class="sido-grid" id="sidoGrid"></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">추이 분석</div>
+    <div class="grid-2" style="margin-bottom:20px">
+      <div class="card">
+        <div class="card-title"><div class="card-title-text"><span class="card-dot" style="background:var(--accent2)"></span>최저 지역 · 순창군</div><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">5년 평균 최저</span></div>
+        <canvas id="chartSunchang" height="200"></canvas>
+        <div class="stat-row" id="sunchangStats"></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><div class="card-title-text"><span class="card-dot" style="background:var(--accent3)"></span>최고 지역 · 울릉군</div><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">5년 평균 최고</span></div>
+        <canvas id="chartUlleung" height="200"></canvas>
+        <div class="stat-row" id="ulleungStats"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title"><div class="card-title-text"><span class="card-dot" style="background:var(--accent4)"></span>최저 vs 최고 직접 비교 — 순창군 · 울릉군</div></div>
+      <canvas id="chartCompare" height="120"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <div class="card-title-text"><span class="card-dot" style="background:var(--accent)"></span>서울 25개 자치구 청년고용률</div>
+        <div class="tabs" id="seoulTabs">
+          <button class="tab active" onclick="switchSeoulView('line',this)">선 그래프</button>
+          <button class="tab" onclick="switchSeoulView('bar',this)">막대 그래프</button>
+        </div>
+      </div>
+      <canvas id="chartSeoul" height="140"></canvas>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">지역 탐색 &amp; 순위</div>
+    <div class="grid-2" style="margin-bottom:20px">
+      <div class="card">
+        <div class="card-title">
+          <div class="card-title-text"><span class="card-dot" style="background:var(--accent)"></span>지역별 5년 평균 순위</div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-active" id="btnTop" onclick="showRank('top')">▲ 상위 20</button>
+            <button class="btn" id="btnBottom" onclick="showRank('bottom')">▼ 하위 20</button>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="rank-table"><thead><tr><th>#</th><th>지역</th><th>평균(%)</th><th>분포</th><th>추세</th></tr></thead><tbody id="rankBody"></tbody></table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><div class="card-title-text"><span class="card-dot" style="background:var(--accent3)"></span>지역 검색 &amp; 추이 비교 (최대 6개)</div></div>
+        <div class="explorer-controls">
+          <div class="search-wrap"><input type="text" id="regionSearch" placeholder="지역명 검색 (예: 강남, 제주)" oninput="onSearch(this.value)"></div>
+          <select id="sidoFilter" onchange="onSidoFilter(this.value)"><option value="">전체 시도</option></select>
+        </div>
+        <div class="compare-tags" id="selectedTags"></div>
+        <canvas id="chartDetail" height="200"></canvas>
+        <p style="font-size:11px;color:var(--text3);margin-top:8px">아래 결과를 클릭하면 그래프에 추가됩니다</p>
+        <div style="max-height:160px;overflow-y:auto;margin-top:8px">
+          <table class="rank-table"><thead><tr><th>지역</th><th>시도</th><th>평균</th></tr></thead><tbody id="searchResults"></tbody></table>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="card-title-text"><span class="card-dot" style="background:var(--accent2)"></span>전국 청년고용률 분포 (히스토그램)</div><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">5년 평균 기준 · 228개 지역</span></div>
+      <canvas id="chartHist" height="120"></canvas>
+    </div>
+  </div>
+  <div class="section" style="padding-bottom:60px">
+    <div class="section-title">변화 추세 분석</div>
+    <div class="card">
+      <div class="card-title"><div class="card-title-text"><span class="card-dot" style="background:var(--accent4)"></span>2021→2025 고용률 변화량 상위·하위 10개 지역</div></div>
+      <canvas id="chartTrend" height="130"></canvas>
+    </div>
+  </div>
+</div>
+<script>
+const RAW = {"시점": ["2021.1/2", "2021.2/2", "2022.1/2", "2022.2/2", "2023.1/2", "2023.2/2", "2024.1/2", "2024.2/2", "2025.1/2", "2025.2/2"], "regions": [{"name": "서울 종로구", "sido": "서울", "values": [36.2, 40.3, 42.6, 34.4, 35.2, 33.5, 32.3, 34.6, 29.7, 35.0], "mean": 35.38, "max": 42.6, "min": 29.7, "trend": -1.2}, {"name": "서울 중구", "sido": "서울", "values": [41.6, 45.2, 42.4, 45.8, 46.3, 41.2, 44.1, 45.0, 47.9, 45.0], "mean": 44.45, "max": 47.9, "min": 41.2, "trend": 3.4}, {"name": "서울 용산구", "sido": "서울", "values": [48.6, 48.2, 47.0, 49.3, 48.3, 49.0, 49.7, 45.9, 49.4, 48.6], "mean": 48.4, "max": 49.7, "min": 45.9, "trend": 0.0}, {"name": "서울 성동구", "sido": "서울", "values": [40.8, 41.6, 44.6, 47.8, 42.4, 40.4, 41.7, 43.3, 43.8, 45.3], "mean": 43.17, "max": 47.8, "min": 40.4, "trend": 4.5}, {"name": "서울 광진구", "sido": "서울", "values": [43.7, 44.5, 50.8, 52.3, 52.2, 51.2, 53.2, 50.2, 53.3, 50.7], "mean": 50.21, "max": 53.3, "min": 43.7, "trend": 7.0}, {"name": "서울 동대문구", "sido": "서울", "values": [37.6, 39.9, 42.3, 32.9, 37.5, 36.2, 38.0, 39.1, 39.9, 32.9], "mean": 37.63, "max": 42.3, "min": 32.9, "trend": -4.7}, {"name": "서울 중랑구", "sido": "서울", "values": [48.0, 46.5, 49.8, 52.4, 54.7, 53.3, 53.7, 49.6, 49.0, 46.3], "mean": 50.33, "max": 54.7, "min": 46.3, "trend": -1.7}, {"name": "서울 성북구", "sido": "서울", "values": [35.0, 38.5, 36.7, 40.2, 37.2, 40.1, 35.6, 35.9, 42.1, 38.9], "mean": 38.02, "max": 42.1, "min": 35.0, "trend": 3.9}, {"name": "서울 강북구", "sido": "서울", "values": [45.1, 46.5, 40.0, 48.4, 52.8, 50.3, 51.3, 46.6, 44.3, 42.8], "mean": 46.81, "max": 52.8, "min": 40.0, "trend": -2.3}, {"name": "서울 도봉구", "sido": "서울", "values": [46.6, 47.9, 45.7, 45.1, 42.3, 52.2, 48.8, 48.7, 51.4, 46.0], "mean": 47.47, "max": 52.2, "min": 42.3, "trend": -0.6}, {"name": "서울 노원구", "sido": "서울", "values": [36.3, 36.4, 36.6, 40.6, 40.4, 43.3, 40.4, 39.3, 37.2, 33.8], "mean": 38.43, "max": 43.3, "min": 33.8, "trend": -2.5}, {"name": "서울 은평구", "sido": "서울", "values": [44.4, 47.6, 46.2, 47.2, 49.0, 47.9, 47.5, 50.3, 47.3, 48.9], "mean": 47.63, "max": 50.3, "min": 44.4, "trend": 4.5}, {"name": "서울 서대문구", "sido": "서울", "values": [39.8, 44.1, 42.8, 42.9, 42.3, 43.3, 47.0, 42.9, 45.8, 41.2], "mean": 43.21, "max": 47.0, "min": 39.8, "trend": 1.4}, {"name": "서울 마포구", "sido": "서울", "values": [49.6, 47.9, 47.8, 45.0, 49.3, 50.4, 45.9, 48.3, 44.9, 45.0], "mean": 47.41, "max": 50.4, "min": 44.9, "trend": -4.6}, {"name": "서울 양천구", "sido": "서울", "values": [36.7, 33.8, 39.4, 42.6, 43.6, 42.2, 38.7, 38.5, 39.2, 40.9], "mean": 39.56, "max": 43.6, "min": 33.8, "trend": 4.2}, {"name": "서울 강서구", "sido": "서울", "values": [50.1, 48.1, 50.0, 58.0, 59.3, 57.4, 56.5, 53.2, 56.2, 50.3], "mean": 53.91, "max": 59.3, "min": 48.1, "trend": 0.2}, {"name": "서울 구로구", "sido": "서울", "values": [47.9, 48.9, 47.3, 50.1, 47.6, 48.6, 48.7, 51.9, 52.6, 51.4], "mean": 49.5, "max": 52.6, "min": 47.3, "trend": 3.5}, {"name": "서울 금천구", "sido": "서울", "values": [54.9, 54.6, 57.1, 68.2, 63.9, 64.7, 65.4, 62.8, 61.0, 59.7], "mean": 61.23, "max": 68.2, "min": 54.6, "trend": 4.8}, {"name": "서울 영등포구", "sido": "서울", "values": [52.6, 50.5, 52.3, 56.4, 57.2, 60.3, 62.8, 56.1, 55.5, 57.8], "mean": 56.15, "max": 62.8, "min": 50.5, "trend": 5.2}, {"name": "서울 동작구", "sido": "서울", "values": [41.8, 43.7, 48.0, 47.3, 49.8, 50.5, 48.3, 49.9, 49.5, 50.8], "mean": 47.96, "max": 50.8, "min": 41.8, "trend": 9.0}, {"name": "서울 관악구", "sido": "서울", "values": [50.0, 49.3, 55.0, 57.6, 58.2, 56.3, 53.5, 56.7, 61.6, 57.1], "mean": 55.53, "max": 61.6, "min": 49.3, "trend": 7.1}, {"name": "서울 서초구", "sido": "서울", "values": [37.8, 39.5, 38.4, 38.5, 40.8, 38.2, 41.8, 38.7, 35.4, 34.8], "mean": 38.39, "max": 41.8, "min": 34.8, "trend": -3.0}, {"name": "서울 강남구", "sido": "서울", "values": [39.8, 37.8, 41.2, 39.9, 38.0, 40.4, 40.2, 37.9, 36.8, 33.9], "mean": 38.59, "max": 41.2, "min": 33.9, "trend": -5.9}, {"name": "서울 송파구", "sido": "서울", "values": [43.3, 43.7, 44.8, 42.2, 46.0, 46.9, 45.4, 42.0, 44.9, 48.2], "mean": 44.74, "max": 48.2, "min": 42.0, "trend": 4.9}, {"name": "서울 강동구", "sido": "서울", "values": [46.0, 46.7, 45.1, 48.0, 55.0, 49.8, 51.6, 41.7, 41.1, 39.9], "mean": 46.49, "max": 55.0, "min": 39.9, "trend": -6.1}, {"name": "부산 중구", "sido": "부산", "values": [46.8, 53.4, 54.3, 52.1, 54.0, 60.3, 59.4, 56.1, 58.2, 50.3], "mean": 54.49, "max": 60.3, "min": 46.8, "trend": 3.5}, {"name": "부산 서구", "sido": "부산", "values": [40.7, 42.4, 42.8, 40.9, 43.2, 42.8, 42.5, 41.3, 40.0, 37.5], "mean": 41.41, "max": 43.2, "min": 37.5, "trend": -3.2}, {"name": "부산 동구", "sido": "부산", "values": [39.4, 40.6, 36.3, 52.1, 53.0, 52.3, 50.9, 50.6, 54.5, 50.5], "mean": 48.02, "max": 54.5, "min": 36.3, "trend": 11.1}, {"name": "부산 영도구", "sido": "부산", "values": [30.0, 36.3, 35.4, 40.2, 33.2, 36.6, 27.9, 31.6, 33.1, 33.7], "mean": 33.8, "max": 40.2, "min": 27.9, "trend": 3.7}, {"name": "부산 부산진구", "sido": "부산", "values": [41.5, 42.2, 41.5, 47.4, 47.2, 48.5, 50.4, 50.8, 42.6, 46.2], "mean": 45.83, "max": 50.8, "min": 41.5, "trend": 4.7}, {"name": "부산 동래구", "sido": "부산", "values": [33.2, 33.2, 35.9, 40.9, 42.0, 39.5, 42.8, 40.1, 39.4, 34.6], "mean": 38.16, "max": 42.8, "min": 33.2, "trend": 1.4}, {"name": "부산 남구", "sido": "부산", "values": [27.8, 31.1, 37.0, 34.2, 38.0, 35.6, 35.6, 42.3, 37.7, 37.6], "mean": 35.69, "max": 42.3, "min": 27.8, "trend": 9.8}, {"name": "부산 북구", "sido": "부산", "values": [37.1, 40.4, 41.0, 43.5, 38.8, 41.3, 48.4, 47.6, 41.3, 40.5], "mean": 41.99, "max": 48.4, "min": 37.1, "trend": 3.4}, {"name": "부산 해운대구", "sido": "부산", "values": [31.2, 31.6, 35.6, 36.8, 35.5, 37.9, 33.6, 39.3, 36.8, 33.6], "mean": 35.19, "max": 39.3, "min": 31.2, "trend": 2.4}, {"name": "부산 사하구", "sido": "부산", "values": [38.5, 40.5, 41.2, 45.6, 43.5, 47.6, 44.2, 43.3, 39.9, 39.7], "mean": 42.4, "max": 47.6, "min": 38.5, "trend": 1.2}, {"name": "부산 금정구", "sido": "부산", "values": [30.5, 32.6, 33.2, 34.1, 34.0, 33.9, 35.5, 31.3, 34.4, 26.7], "mean": 32.62, "max": 35.5, "min": 26.7, "trend": -3.8}, {"name": "부산 강서구", "sido": "부산", "values": [46.1, 41.6, 42.3, 48.4, 42.5, 47.1, 44.0, 45.3, 39.7, 45.5], "mean": 44.25, "max": 48.4, "min": 39.7, "trend": -0.6}, {"name": "부산 연제구", "sido": "부산", "values": [35.8, 39.8, 43.4, 38.3, 45.8, 45.8, 42.4, 44.4, 45.2, 44.0], "mean": 42.49, "max": 45.8, "min": 35.8, "trend": 8.2}, {"name": "부산 수영구", "sido": "부산", "values": [41.9, 48.3, 54.5, 53.7, 50.2, 51.0, 50.1, 50.2, 50.4, 53.3], "mean": 50.36, "max": 54.5, "min": 41.9, "trend": 11.4}, {"name": "부산 사상구", "sido": "부산", "values": [44.4, 45.0, 50.4, 38.2, 45.6, 41.0, 47.9, 43.7, 42.7, 42.4], "mean": 44.13, "max": 50.4, "min": 38.2, "trend": -2.0}, {"name": "부산 기장군", "sido": "부산", "values": [32.2, 36.7, 35.8, 39.8, 37.6, 36.2, 40.3, 42.0, 37.5, 39.3], "mean": 37.74, "max": 42.0, "min": 32.2, "trend": 7.1}, {"name": "대구 중구", "sido": "대구", "values": [46.3, 49.5, 48.8, 51.4, 48.1, 46.7, 46.0, 43.5, 51.0, 51.3], "mean": 48.26, "max": 51.4, "min": 43.5, "trend": 5.0}, {"name": "대구 동구", "sido": "대구", "values": [42.7, 45.2, 45.4, 45.0, 40.8, 41.9, 40.7, 39.8, 43.8, 38.3], "mean": 42.36, "max": 45.4, "min": 38.3, "trend": -4.4}, {"name": "대구 서구", "sido": "대구", "values": [37.2, 41.5, 44.1, 39.6, 37.3, 40.1, 38.1, 40.5, 42.0, 38.4], "mean": 39.88, "max": 44.1, "min": 37.2, "trend": 1.2}, {"name": "대구 남구", "sido": "대구", "values": [38.8, 39.8, 41.6, 41.0, 38.0, 42.8, 43.1, 37.3, 47.7, 45.3], "mean": 41.54, "max": 47.7, "min": 37.3, "trend": 6.5}, {"name": "대구 북구", "sido": "대구", "values": [31.1, 31.6, 33.2, 36.2, 35.9, 34.9, 35.4, 33.4, 33.4, 32.7], "mean": 33.78, "max": 36.2, "min": 31.1, "trend": 1.6}, {"name": "대구 수성구", "sido": "대구", "values": [27.1, 27.4, 28.1, 28.8, 29.2, 24.8, 24.8, 26.0, 23.8, 24.9], "mean": 26.49, "max": 29.2, "min": 23.8, "trend": -2.2}, {"name": "대구 달서구", "sido": "대구", "values": [37.2, 38.7, 39.4, 34.7, 37.5, 38.6, 36.2, 34.4, 35.4, 33.4], "mean": 36.55, "max": 39.4, "min": 33.4, "trend": -3.8}, {"name": "대구 달성군", "sido": "대구", "values": [37.8, 39.4, 39.2, 45.6, 42.0, 40.8, 37.6, 37.2, 38.6, 32.8], "mean": 39.1, "max": 45.6, "min": 32.8, "trend": -5.0}, {"name": "대구 군위군", "sido": "대구", "values": [44.8, 48.9, 47.3, 47.9, 45.1, 41.2, 46.4, 46.8, 44.6, 50.9], "mean": 46.39, "max": 50.9, "min": 41.2, "trend": 6.1}, {"name": "인천 중구", "sido": "인천", "values": [41.4, 41.6, 44.1, 46.5, 51.6, 47.4, 48.6, 48.2, 47.1, 48.9], "mean": 46.54, "max": 51.6, "min": 41.4, "trend": 7.5}, {"name": "인천 동구", "sido": "인천", "values": [38.0, 39.5, 40.5, 40.9, 44.3, 43.9, 49.6, 44.3, 45.3, 43.8], "mean": 43.01, "max": 49.6, "min": 38.0, "trend": 5.8}, {"name": "인천 연수구", "sido": "인천", "values": [36.6, 38.9, 38.3, 39.9, 38.8, 38.5, 36.5, 39.8, 40.3, 38.6], "mean": 38.62, "max": 40.3, "min": 36.5, "trend": 2.0}, {"name": "인천 남동구", "sido": "인천", "values": [41.1, 45.3, 46.3, 47.2, 46.6, 42.5, 45.0, 48.6, 44.0, 43.1], "mean": 44.97, "max": 48.6, "min": 41.1, "trend": 2.0}, {"name": "인천 부평구", "sido": "인천", "values": [45.9, 49.6, 52.2, 50.9, 53.0, 47.2, 47.1, 47.9, 45.0, 43.2], "mean": 48.2, "max": 53.0, "min": 43.2, "trend": -2.7}, {"name": "인천 계양구", "sido": "인천", "values": [43.0, 43.3, 44.8, 50.2, 47.7, 46.5, 48.2, 43.7, 41.7, 41.3], "mean": 45.04, "max": 50.2, "min": 41.3, "trend": -1.7}, {"name": "인천 서구", "sido": "인천", "values": [45.8, 43.7, 43.6, 46.2, 44.0, 43.7, 42.7, 42.3, 40.5, 42.3], "mean": 43.48, "max": 46.2, "min": 40.5, "trend": -3.5}, {"name": "인천 미추홀구", "sido": "인천", "values": [45.2, 47.7, 45.7, 50.6, 49.7, 47.1, 42.1, 45.8, 45.5, 44.1], "mean": 46.35, "max": 50.6, "min": 42.1, "trend": -1.1}, {"name": "인천 강화군", "sido": "인천", "values": [36.7, 34.5, 41.3, 41.6, 41.8, 41.0, 40.5, 39.6, 43.5, 42.7], "mean": 40.32, "max": 43.5, "min": 34.5, "trend": 6.0}, {"name": "인천 옹진군", "sido": "인천", "values": [57.9, 52.4, 56.1, 71.2, 44.6, 40.7, 47.3, 52.5, 63.2, 60.1], "mean": 54.6, "max": 71.2, "min": 40.7, "trend": 2.2}, {"name": "광주 동구", "sido": "광주", "values": [34.6, 33.1, 40.4, 41.1, 39.3, 40.9, 40.7, 40.0, 41.7, 39.5], "mean": 39.13, "max": 41.7, "min": 33.1, "trend": 4.9}, {"name": "광주 서구", "sido": "광주", "values": [39.7, 38.1, 40.3, 39.2, 43.4, 44.5, 40.6, 40.5, 39.8, 41.8], "mean": 40.79, "max": 44.5, "min": 38.1, "trend": 2.1}, {"name": "광주 남구", "sido": "광주", "values": [33.5, 33.2, 36.3, 36.8, 33.5, 32.0, 35.9, 37.2, 32.1, 34.3], "mean": 34.48, "max": 37.2, "min": 32.0, "trend": 0.8}, {"name": "광주 북구", "sido": "광주", "values": [34.7, 35.1, 39.7, 37.5, 37.1, 39.1, 40.0, 38.3, 36.5, 36.5], "mean": 37.45, "max": 40.0, "min": 34.7, "trend": 1.8}, {"name": "광주 광산구", "sido": "광주", "values": [35.9, 37.4, 35.6, 39.7, 39.8, 40.1, 40.0, 39.8, 38.3, 39.2], "mean": 38.58, "max": 40.1, "min": 35.6, "trend": 3.3}, {"name": "대전 동구", "sido": "대전", "values": [29.4, 34.2, 33.8, 39.7, 38.2, 34.9, 40.7, 39.5, 39.1, 36.1], "mean": 36.56, "max": 40.7, "min": 29.4, "trend": 6.7}, {"name": "대전 중구", "sido": "대전", "values": [39.0, 44.3, 47.6, 45.5, 44.3, 43.7, 44.9, 45.9, 48.0, 47.1], "mean": 45.03, "max": 48.0, "min": 39.0, "trend": 8.1}, {"name": "대전 서구", "sido": "대전", "values": [44.2, 43.3, 44.2, 45.9, 45.4, 46.8, 46.6, 44.2, 44.6, 44.0], "mean": 44.92, "max": 46.8, "min": 43.3, "trend": -0.2}, {"name": "대전 유성구", "sido": "대전", "values": [43.0, 39.5, 43.8, 43.7, 42.4, 40.2, 43.1, 43.8, 38.8, 39.3], "mean": 41.76, "max": 43.8, "min": 38.8, "trend": -3.7}, {"name": "대전 대덕구", "sido": "대전", "values": [40.3, 44.6, 46.0, 45.9, 47.7, 46.3, 48.6, 45.3, 48.6, 49.9], "mean": 46.32, "max": 49.9, "min": 40.3, "trend": 9.6}, {"name": "울산 중구", "sido": "울산", "values": [35.1, 40.3, 40.1, 37.5, 39.2, 37.1, 35.1, 40.0, 41.0, 38.1], "mean": 38.35, "max": 41.0, "min": 35.1, "trend": 3.0}, {"name": "울산 남구", "sido": "울산", "values": [36.2, 37.7, 38.0, 40.2, 40.6, 41.0, 38.3, 41.4, 33.0, 36.6], "mean": 38.3, "max": 41.4, "min": 33.0, "trend": 0.4}, {"name": "울산 동구", "sido": "울산", "values": [30.9, 30.9, 34.7, 36.5, 37.9, 40.9, 37.8, 44.4, 38.2, 44.5], "mean": 37.67, "max": 44.5, "min": 30.9, "trend": 13.6}, {"name": "울산 북구", "sido": "울산", "values": [33.7, 38.5, 36.4, 37.0, 35.0, 36.6, 35.8, 35.5, 35.7, 33.9], "mean": 35.81, "max": 38.5, "min": 33.7, "trend": 0.2}, {"name": "울산 울주군", "sido": "울산", "values": [32.9, 33.6, 38.7, 32.9, 31.0, 31.4, 30.3, 32.2, 35.2, 34.8], "mean": 33.3, "max": 38.7, "min": 30.3, "trend": 1.9}, {"name": "수원시", "sido": "경기", "values": [43.0, 44.8, 49.1, 46.9, 42.2, 41.2, 43.6, 46.2, 45.5, 42.7], "mean": 44.52, "max": 49.1, "min": 41.2, "trend": -0.3}, {"name": "성남시", "sido": "경기", "values": [42.4, 45.4, 42.9, 48.7, 47.4, 44.9, 45.4, 44.4, 44.9, 41.6], "mean": 44.8, "max": 48.7, "min": 41.6, "trend": -0.8}, {"name": "의정부시", "sido": "경기", "values": [38.4, 42.1, 42.5, 45.6, 46.6, 45.8, 48.1, 47.6, 48.0, 45.3], "mean": 45.0, "max": 48.1, "min": 38.4, "trend": 6.9}, {"name": "안양시", "sido": "경기", "values": [43.1, 41.3, 43.6, 42.5, 45.1, 45.4, 42.3, 41.5, 43.0, 44.3], "mean": 43.21, "max": 45.4, "min": 41.3, "trend": 1.2}, {"name": "부천시", "sido": "경기", "values": [45.4, 45.5, 44.6, 47.8, 47.7, 49.0, 45.9, 41.1, 45.3, 42.8], "mean": 45.51, "max": 49.0, "min": 41.1, "trend": -2.6}, {"name": "광명시", "sido": "경기", "values": [36.9, 36.7, 38.0, 38.8, 41.7, 42.4, 43.2, 41.2, 41.9, 39.9], "mean": 40.07, "max": 43.2, "min": 36.7, "trend": 3.0}, {"name": "평택시", "sido": "경기", "values": [47.3, 45.1, 46.5, 47.2, 47.1, 51.1, 47.1, 46.8, 45.2, 47.5], "mean": 47.09, "max": 51.1, "min": 45.1, "trend": 0.2}, {"name": "동두천시", "sido": "경기", "values": [39.5, 43.3, 40.0, 38.9, 40.0, 47.5, 41.8, 39.8, 41.2, 39.8], "mean": 41.18, "max": 47.5, "min": 38.9, "trend": 0.3}, {"name": "안산시", "sido": "경기", "values": [42.6, 42.8, 46.1, 48.5, 50.4, 49.7, 46.7, 45.2, 44.8, 45.9], "mean": 46.27, "max": 50.4, "min": 42.6, "trend": 3.3}, {"name": "고양시", "sido": "경기", "values": [40.8, 42.9, 45.7, 48.3, 45.3, 41.7, 42.9, 42.9, 39.6, 37.0], "mean": 42.71, "max": 48.3, "min": 37.0, "trend": -3.8}, {"name": "과천시", "sido": "경기", "values": [30.5, 33.2, 37.1, 37.0, 38.1, 37.0, 33.3, 35.4, 36.0, 36.8], "mean": 35.44, "max": 38.1, "min": 30.5, "trend": 6.3}, {"name": "구리시", "sido": "경기", "values": [43.9, 41.6, 44.9, 45.0, 43.0, 38.2, 44.0, 42.9, 48.6, 42.4], "mean": 43.45, "max": 48.6, "min": 38.2, "trend": -1.5}, {"name": "남양주시", "sido": "경기", "values": [37.2, 38.6, 38.3, 39.4, 45.0, 45.7, 42.8, 41.7, 38.5, 39.0], "mean": 40.62, "max": 45.7, "min": 37.2, "trend": 1.8}, {"name": "오산시", "sido": "경기", "values": [43.5, 44.5, 47.4, 47.0, 50.3, 48.3, 47.8, 45.6, 44.3, 40.8], "mean": 45.95, "max": 50.3, "min": 40.8, "trend": -2.7}, {"name": "시흥시", "sido": "경기", "values": [43.2, 44.7, 45.3, 45.7, 42.6, 43.3, 45.1, 40.6, 44.2, 41.2], "mean": 43.59, "max": 45.7, "min": 40.6, "trend": -2.0}, {"name": "군포시", "sido": "경기", "values": [41.1, 46.6, 48.8, 44.8, 46.9, 48.5, 43.7, 44.7, 43.8, 42.3], "mean": 45.12, "max": 48.8, "min": 41.1, "trend": 1.2}, {"name": "의왕시", "sido": "경기", "values": [40.1, 41.7, 42.0, 42.3, 42.4, 41.9, 42.2, 44.6, 45.5, 48.3], "mean": 43.1, "max": 48.3, "min": 40.1, "trend": 8.2}, {"name": "하남시", "sido": "경기", "values": [45.8, 46.2, 46.4, 40.8, 43.6, 42.4, 42.6, 40.2, 42.3, 44.0], "mean": 43.43, "max": 46.4, "min": 40.2, "trend": -1.8}, {"name": "용인시", "sido": "경기", "values": [39.9, 40.6, 41.6, 44.6, 40.6, 39.2, 38.0, 39.9, 38.4, 37.4], "mean": 40.02, "max": 44.6, "min": 37.4, "trend": -2.5}, {"name": "파주시", "sido": "경기", "values": [35.3, 39.1, 42.3, 41.5, 43.7, 44.2, 45.1, 42.7, 39.2, 38.6], "mean": 41.17, "max": 45.1, "min": 35.3, "trend": 3.3}, {"name": "이천시", "sido": "경기", "values": [47.7, 51.5, 50.7, 52.3, 46.8, 47.2, 54.2, 45.5, 49.9, 49.3], "mean": 49.51, "max": 54.2, "min": 45.5, "trend": 1.6}, {"name": "안성시", "sido": "경기", "values": [42.6, 41.5, 42.2, 46.5, 49.5, 55.0, 48.0, 45.5, 45.0, 42.2], "mean": 45.8, "max": 55.0, "min": 41.5, "trend": -0.4}, {"name": "김포시", "sido": "경기", "values": [38.2, 41.2, 43.8, 45.1, 44.8, 45.8, 43.1, 44.8, 42.4, 40.2], "mean": 42.94, "max": 45.8, "min": 38.2, "trend": 2.0}, {"name": "화성시", "sido": "경기", "values": [46.2, 45.4, 42.3, 52.2, 47.0, 47.2, 45.4, 50.0, 46.4, 46.0], "mean": 46.81, "max": 52.2, "min": 42.3, "trend": -0.2}, {"name": "광주시", "sido": "광주", "values": [48.1, 48.2, 50.6, 51.2, 49.5, 49.0, 42.5, 45.0, 47.9, 45.2], "mean": 47.72, "max": 51.2, "min": 42.5, "trend": -2.9}, {"name": "양주시", "sido": "경기", "values": [39.7, 41.6, 42.0, 45.2, 43.7, 42.5, 42.6, 43.2, 43.2, 42.2], "mean": 42.59, "max": 45.2, "min": 39.7, "trend": 2.5}, {"name": "포천시", "sido": "경기", "values": [48.3, 49.2, 47.3, 48.3, 48.1, 45.3, 49.3, 45.2, 43.0, 50.0], "mean": 47.4, "max": 50.0, "min": 43.0, "trend": 1.7}, {"name": "여주시", "sido": "경기", "values": [49.3, 50.0, 45.9, 47.6, 48.9, 48.8, 44.1, 44.2, 43.4, 41.6], "mean": 46.38, "max": 50.0, "min": 41.6, "trend": -7.7}, {"name": "연천군", "sido": "경기", "values": [45.8, 36.4, 39.2, 49.0, 36.4, 38.4, 43.2, 39.2, 40.6, 40.2], "mean": 40.84, "max": 49.0, "min": 36.4, "trend": -5.6}, {"name": "가평군", "sido": "경기", "values": [37.8, 39.4, 35.8, 40.5, 36.4, 44.0, 44.3, 41.7, 46.3, 36.4], "mean": 40.26, "max": 46.3, "min": 35.8, "trend": -1.4}, {"name": "양평군", "sido": "경기", "values": [31.8, 32.7, 38.8, 37.1, 36.4, 32.2, 33.6, 37.4, 29.6, 41.1], "mean": 35.07, "max": 41.1, "min": 29.6, "trend": 9.3}, {"name": "춘천시", "sido": "강원", "values": [36.1, 39.3, 39.8, 44.1, 44.4, 45.5, 45.4, 47.3, 43.1, 38.5], "mean": 42.35, "max": 47.3, "min": 36.1, "trend": 2.4}, {"name": "원주시", "sido": "강원", "values": [37.2, 39.2, 34.1, 36.3, 39.1, 37.3, 37.1, 37.7, 40.4, 37.9], "mean": 37.63, "max": 40.4, "min": 34.1, "trend": 0.7}, {"name": "강릉시", "sido": "강원", "values": [37.8, 38.7, 37.6, 38.7, 38.5, 41.7, 40.9, 41.7, 38.9, 37.6], "mean": 39.21, "max": 41.7, "min": 37.6, "trend": -0.2}, {"name": "동해시", "sido": "강원", "values": [29.7, 33.4, 32.1, 37.3, 42.9, 39.3, 41.1, 42.0, 41.4, 38.9], "mean": 37.81, "max": 42.9, "min": 29.7, "trend": 9.2}, {"name": "태백시", "sido": "강원", "values": [32.3, 38.5, 34.4, 47.6, 35.8, 36.8, 37.9, 38.7, 27.6, 45.3], "mean": 37.49, "max": 47.6, "min": 27.6, "trend": 13.0}, {"name": "속초시", "sido": "강원", "values": [40.5, 38.8, 45.4, 44.1, 46.0, 49.9, 46.3, 46.1, 48.3, 47.0], "mean": 45.24, "max": 49.9, "min": 38.8, "trend": 6.5}, {"name": "삼척시", "sido": "강원", "values": [30.0, 32.1, 29.8, 34.6, 35.2, 33.3, 31.8, 32.0, 31.0, 33.4], "mean": 32.32, "max": 35.2, "min": 29.8, "trend": 3.4}, {"name": "홍천군", "sido": "강원", "values": [46.4, 41.8, 46.0, 36.5, 42.7, 42.1, 45.2, 36.3, 34.5, 37.6], "mean": 40.91, "max": 46.4, "min": 34.5, "trend": -8.8}, {"name": "횡성군", "sido": "강원", "values": [31.9, 34.0, 35.0, 45.2, 33.4, 42.4, 45.4, 40.0, 42.9, 39.4], "mean": 38.96, "max": 45.4, "min": 31.9, "trend": 7.5}, {"name": "영월군", "sido": "강원", "values": [31.7, 32.7, 34.4, 42.0, 43.4, 41.7, 40.4, 39.7, 40.3, 41.7], "mean": 38.8, "max": 43.4, "min": 31.7, "trend": 10.0}, {"name": "평창군", "sido": "강원", "values": [38.8, 42.5, 44.9, 32.2, 36.5, 39.3, 49.5, 54.6, 45.6, 52.2], "mean": 43.61, "max": 54.6, "min": 32.2, "trend": 13.4}, {"name": "정선군", "sido": "강원", "values": [32.5, 44.1, 37.4, 43.9, 43.4, 37.3, 42.0, 53.3, 54.1, 51.9], "mean": 43.99, "max": 54.1, "min": 32.5, "trend": 19.4}, {"name": "철원군", "sido": "강원", "values": [26.8, 34.5, 44.1, 35.1, 33.0, 28.2, 30.9, 33.5, 38.0, 33.6], "mean": 33.77, "max": 44.1, "min": 26.8, "trend": 6.8}, {"name": "화천군", "sido": "강원", "values": [40.4, 40.5, 55.7, 43.2, 31.6, 32.9, 41.8, 36.5, 35.7, 44.4], "mean": 40.27, "max": 55.7, "min": 31.6, "trend": 4.0}, {"name": "양구군", "sido": "강원", "values": [39.6, 46.0, 38.9, 39.4, 36.7, 35.2, 31.9, 26.6, 29.4, 26.3], "mean": 35.0, "max": 46.0, "min": 26.3, "trend": -13.3}, {"name": "인제군", "sido": "강원", "values": [48.2, 46.0, 50.2, 54.7, 45.8, 49.2, 49.9, 44.1, 40.5, 43.3], "mean": 47.19, "max": 54.7, "min": 40.5, "trend": -4.9}, {"name": "고성군", "sido": "강원", "values": [40.6, 53.6, 60.9, 57.5, 57.0, 48.5, 57.8, 55.2, 49.7, 48.8], "mean": 52.96, "max": 60.9, "min": 40.6, "trend": 8.2}, {"name": "양양군", "sido": "강원", "values": [41.6, 56.5, 55.3, 41.4, 48.6, 46.0, 45.2, 51.2, 54.9, 52.3], "mean": 49.3, "max": 56.5, "min": 41.4, "trend": 10.7}, {"name": "청주시", "sido": "충북", "values": [45.6, 46.4, 48.7, 49.7, 47.3, 44.3, 47.4, 47.2, 46.3, 48.9], "mean": 47.18, "max": 49.7, "min": 44.3, "trend": 3.3}, {"name": "충주시", "sido": "충북", "values": [32.1, 36.5, 34.2, 44.3, 45.7, 42.7, 46.7, 39.0, 40.4, 40.9], "mean": 40.25, "max": 46.7, "min": 32.1, "trend": 8.8}, {"name": "제천시", "sido": "충북", "values": [33.5, 35.1, 35.5, 39.6, 39.7, 37.5, 43.1, 39.2, 40.4, 37.3], "mean": 38.09, "max": 43.1, "min": 33.5, "trend": 3.8}, {"name": "보은군", "sido": "충북", "values": [47.2, 47.6, 41.7, 49.3, 47.6, 49.7, 48.4, 46.9, 49.3, 50.3], "mean": 47.8, "max": 50.3, "min": 41.7, "trend": 3.1}, {"name": "옥천군", "sido": "충북", "values": [35.1, 38.7, 42.6, 44.6, 43.8, 42.9, 44.2, 39.4, 42.8, 39.5], "mean": 41.36, "max": 44.6, "min": 35.1, "trend": 4.4}, {"name": "영동군", "sido": "충북", "values": [26.3, 29.8, 33.9, 27.9, 37.5, 35.8, 43.4, 35.1, 39.9, 34.7], "mean": 34.43, "max": 43.4, "min": 26.3, "trend": 8.4}, {"name": "진천군", "sido": "충북", "values": [50.4, 49.2, 49.2, 51.7, 53.2, 49.9, 54.3, 48.6, 48.6, 47.4], "mean": 50.25, "max": 54.3, "min": 47.4, "trend": -3.0}, {"name": "괴산군", "sido": "충북", "values": [37.4, 33.4, 29.2, 47.3, 41.2, 40.2, 47.4, 48.3, 35.3, 28.4], "mean": 38.81, "max": 48.3, "min": 28.4, "trend": -9.0}, {"name": "음성군", "sido": "충북", "values": [58.3, 58.0, 52.4, 54.1, 51.2, 46.4, 51.1, 51.7, 52.3, 55.2], "mean": 53.07, "max": 58.3, "min": 46.4, "trend": -3.1}, {"name": "단양군", "sido": "충북", "values": [39.6, 39.2, 41.0, 42.9, 50.1, 46.7, 40.7, 31.3, 44.0, 53.0], "mean": 42.85, "max": 53.0, "min": 31.3, "trend": 13.4}, {"name": "증평군", "sido": "충북", "values": [42.7, 41.1, 46.9, 50.3, 47.9, 44.5, 40.1, 43.9, 49.4, 46.4], "mean": 45.32, "max": 50.3, "min": 40.1, "trend": 3.7}, {"name": "천안시", "sido": "충남", "values": [43.2, 44.7, 44.9, 46.9, 46.1, 46.2, 45.3, 43.9, 43.4, 42.7], "mean": 44.73, "max": 46.9, "min": 42.7, "trend": -0.5}, {"name": "공주시", "sido": "충남", "values": [34.1, 33.1, 34.5, 29.4, 33.9, 34.2, 31.0, 29.2, 31.7, 29.3], "mean": 32.04, "max": 34.5, "min": 29.2, "trend": -4.8}, {"name": "보령시", "sido": "충남", "values": [39.7, 44.7, 52.0, 49.6, 52.1, 46.0, 47.9, 54.0, 49.8, 42.3], "mean": 47.81, "max": 54.0, "min": 39.7, "trend": 2.6}, {"name": "아산시", "sido": "충남", "values": [40.1, 35.3, 42.3, 40.9, 44.6, 44.2, 43.6, 43.9, 45.6, 43.6], "mean": 42.41, "max": 45.6, "min": 35.3, "trend": 3.5}, {"name": "서산시", "sido": "충남", "values": [47.7, 47.4, 44.3, 51.6, 45.9, 45.9, 46.1, 45.9, 47.7, 45.1], "mean": 46.76, "max": 51.6, "min": 44.3, "trend": -2.6}, {"name": "논산시", "sido": "충남", "values": [38.0, 39.4, 41.3, 37.6, 37.2, 36.4, 36.6, 36.8, 36.3, 30.7], "mean": 37.03, "max": 41.3, "min": 30.7, "trend": -7.3}, {"name": "계룡시", "sido": "충남", "values": [24.4, 23.1, 27.5, 33.3, 39.1, 32.8, 38.6, 32.2, 33.0, 30.1], "mean": 31.41, "max": 39.1, "min": 23.1, "trend": 5.7}, {"name": "당진시", "sido": "충남", "values": [43.6, 41.2, 42.2, 45.4, 46.3, 46.0, 45.8, 42.8, 48.3, 49.2], "mean": 45.08, "max": 49.2, "min": 41.2, "trend": 5.6}, {"name": "금산군", "sido": "충남", "values": [42.6, 41.9, 39.0, 34.0, 42.0, 43.2, 32.4, 37.1, 38.6, 31.9], "mean": 38.27, "max": 43.2, "min": 31.9, "trend": -10.7}, {"name": "부여군", "sido": "충남", "values": [35.5, 43.2, 44.6, 46.7, 42.5, 32.1, 26.6, 39.6, 40.0, 43.3], "mean": 39.41, "max": 46.7, "min": 26.6, "trend": 7.8}, {"name": "서천군", "sido": "충남", "values": [33.3, 51.9, 50.9, 45.1, 36.0, 42.9, 41.6, 45.8, 46.9, 42.5], "mean": 43.69, "max": 51.9, "min": 33.3, "trend": 9.2}, {"name": "청양군", "sido": "충남", "values": [42.4, 53.4, 43.6, 55.4, 50.3, 47.2, 44.2, 43.3, 44.6, 46.7], "mean": 47.11, "max": 55.4, "min": 42.4, "trend": 4.3}, {"name": "홍성군", "sido": "충남", "values": [33.7, 38.3, 40.1, 43.3, 37.1, 28.7, 35.5, 35.9, 34.9, 34.7], "mean": 36.22, "max": 43.3, "min": 28.7, "trend": 1.0}, {"name": "예산군", "sido": "충남", "values": [38.0, 41.4, 46.5, 38.7, 46.2, 47.5, 54.1, 49.1, 46.8, 52.0], "mean": 46.03, "max": 54.1, "min": 38.0, "trend": 14.0}, {"name": "태안군", "sido": "충남", "values": [40.0, 45.2, 41.2, 40.2, 35.5, 34.6, 37.9, 33.7, 37.0, 32.2], "mean": 37.75, "max": 45.2, "min": 32.2, "trend": -7.8}, {"name": "전주시", "sido": "전북", "values": [32.0, 37.1, 35.3, 40.9, 36.6, 37.0, 37.1, 37.1, 36.5, 35.5], "mean": 36.51, "max": 40.9, "min": 32.0, "trend": 3.5}, {"name": "군산시", "sido": "전북", "values": [31.8, 31.3, 28.6, 33.1, 27.2, 33.8, 33.5, 37.4, 37.2, 40.6], "mean": 33.45, "max": 40.6, "min": 27.2, "trend": 8.8}, {"name": "익산시", "sido": "전북", "values": [25.7, 30.1, 30.7, 33.8, 33.0, 34.1, 31.1, 33.5, 37.0, 34.0], "mean": 32.3, "max": 37.0, "min": 25.7, "trend": 8.3}, {"name": "정읍시", "sido": "전북", "values": [37.9, 34.2, 35.5, 40.4, 35.9, 40.4, 39.2, 39.8, 40.3, 34.3], "mean": 37.79, "max": 40.4, "min": 34.2, "trend": -3.6}, {"name": "남원시", "sido": "전북", "values": [36.0, 31.6, 33.8, 37.0, 33.9, 33.4, 44.5, 43.2, 45.7, 48.6], "mean": 38.77, "max": 48.6, "min": 31.6, "trend": 12.6}, {"name": "김제시", "sido": "전북", "values": [34.0, 30.9, 32.9, 36.5, 36.5, 36.3, 42.1, 43.0, 44.6, 46.1], "mean": 38.29, "max": 46.1, "min": 30.9, "trend": 12.1}, {"name": "완주군", "sido": "전북", "values": [28.4, 26.7, 27.8, 41.8, 38.6, 42.4, 37.0, 32.9, 32.8, 33.2], "mean": 34.16, "max": 42.4, "min": 26.7, "trend": 4.8}, {"name": "진안군", "sido": "전북", "values": [40.8, 39.5, 41.7, 40.7, 44.2, 39.3, 39.4, 33.9, 36.7, 33.1], "mean": 38.93, "max": 44.2, "min": 33.1, "trend": -7.7}, {"name": "무주군", "sido": "전북", "values": [45.8, 42.7, 38.0, 35.2, 33.9, 34.2, 27.7, 40.4, 34.5, 32.6], "mean": 36.5, "max": 45.8, "min": 27.7, "trend": -13.2}, {"name": "장수군", "sido": "전북", "values": [37.3, 36.5, 40.1, 39.2, 42.3, 40.5, 38.4, 39.7, 39.9, 34.7], "mean": 38.86, "max": 42.3, "min": 34.7, "trend": -2.6}, {"name": "임실군", "sido": "전북", "values": [36.5, 39.8, 30.4, 43.4, 39.9, 38.9, 47.5, 46.5, 43.4, 39.9], "mean": 40.62, "max": 47.5, "min": 30.4, "trend": 3.4}, {"name": "순창군", "sido": "전북", "values": [31.8, 38.0, 31.2, 26.4, 13.0, 17.3, 15.8, 14.3, 20.7, 21.7], "mean": 23.02, "max": 38.0, "min": 13.0, "trend": -10.1}, {"name": "고창군", "sido": "전북", "values": [35.1, 33.2, 36.0, 43.7, 39.3, 37.6, 42.7, 42.6, 33.1, 40.4], "mean": 38.37, "max": 43.7, "min": 33.1, "trend": 5.3}, {"name": "부안군", "sido": "전북", "values": [36.4, 29.2, 31.8, 44.5, 48.6, 46.2, 49.1, 44.5, 41.1, 50.1], "mean": 42.15, "max": 50.1, "min": 29.2, "trend": 13.7}, {"name": "목포시", "sido": "전남", "values": [31.0, 29.0, 34.5, 39.4, 38.8, 40.7, 38.5, 35.4, 34.4, 36.1], "mean": 35.78, "max": 40.7, "min": 29.0, "trend": 5.1}, {"name": "여수시", "sido": "전남", "values": [35.7, 40.8, 40.8, 47.5, 45.6, 44.2, 50.5, 51.2, 50.7, 48.5], "mean": 45.55, "max": 51.2, "min": 35.7, "trend": 12.8}, {"name": "순천시", "sido": "전남", "values": [31.8, 33.2, 34.8, 44.9, 40.8, 43.0, 41.8, 42.5, 42.9, 40.7], "mean": 39.64, "max": 44.9, "min": 31.8, "trend": 8.9}, {"name": "나주시", "sido": "전남", "values": [34.0, 41.8, 35.4, 38.6, 34.8, 37.3, 34.0, 34.0, 34.0, 31.9], "mean": 35.58, "max": 41.8, "min": 31.9, "trend": -2.1}, {"name": "광양시", "sido": "전남", "values": [41.1, 40.7, 43.0, 40.1, 40.5, 42.8, 44.8, 44.3, 43.8, 43.7], "mean": 42.48, "max": 44.8, "min": 40.1, "trend": 2.6}, {"name": "담양군", "sido": "전남", "values": [27.2, 35.7, 26.0, 34.4, 32.5, 28.2, 29.0, 29.8, 34.5, 19.0], "mean": 29.63, "max": 35.7, "min": 19.0, "trend": -8.2}, {"name": "곡성군", "sido": "전남", "values": [30.8, 27.1, 35.7, 26.9, 30.3, 35.2, 31.2, 31.2, 34.7, 32.1], "mean": 31.52, "max": 35.7, "min": 26.9, "trend": 1.3}, {"name": "구례군", "sido": "전남", "values": [40.9, 38.5, 38.6, 46.1, 46.9, 44.4, 49.0, 41.5, 38.2, 26.7], "mean": 41.08, "max": 49.0, "min": 26.7, "trend": -14.2}, {"name": "고흥군", "sido": "전남", "values": [52.9, 39.2, 46.8, 51.4, 44.0, 49.1, 39.8, 58.5, 54.9, 56.4], "mean": 49.3, "max": 58.5, "min": 39.2, "trend": 3.5}, {"name": "보성군", "sido": "전남", "values": [30.4, 33.2, 39.5, 36.8, 28.5, 34.2, 37.4, 37.4, 41.0, 40.5], "mean": 35.89, "max": 41.0, "min": 28.5, "trend": 10.1}, {"name": "화순군", "sido": "전남", "values": [29.1, 32.6, 29.4, 36.1, 30.3, 35.6, 35.0, 37.7, 36.4, 33.4], "mean": 33.56, "max": 37.7, "min": 29.1, "trend": 4.3}, {"name": "장흥군", "sido": "전남", "values": [39.3, 38.3, 49.4, 46.9, 47.3, 51.1, 57.3, 57.2, 54.7, 57.1], "mean": 49.86, "max": 57.3, "min": 38.3, "trend": 17.8}, {"name": "강진군", "sido": "전남", "values": [34.7, 40.1, 43.7, 32.7, 33.3, 35.8, 40.8, 40.7, 37.7, 42.2], "mean": 38.17, "max": 43.7, "min": 32.7, "trend": 7.5}, {"name": "해남군", "sido": "전남", "values": [46.2, 47.5, 50.7, 46.0, 53.7, 48.6, 51.3, 50.7, 54.2, 57.7], "mean": 50.66, "max": 57.7, "min": 46.0, "trend": 11.5}, {"name": "영암군", "sido": "전남", "values": [40.0, 45.2, 41.7, 49.2, 50.6, 45.3, 45.5, 56.9, 54.1, 55.2], "mean": 48.37, "max": 56.9, "min": 40.0, "trend": 15.2}, {"name": "무안군", "sido": "전남", "values": [22.9, 22.3, 22.1, 26.6, 27.9, 23.2, 31.9, 32.4, 33.1, 32.9], "mean": 27.53, "max": 33.1, "min": 22.1, "trend": 10.0}, {"name": "함평군", "sido": "전남", "values": [41.7, 35.4, 41.5, 37.1, 44.0, 40.4, 35.2, 43.1, 44.5, 34.0], "mean": 39.69, "max": 44.5, "min": 34.0, "trend": -7.7}, {"name": "영광군", "sido": "전남", "values": [41.3, 40.5, 43.6, 37.8, 38.6, 32.4, 39.8, 33.9, 37.2, 38.7], "mean": 38.38, "max": 43.6, "min": 32.4, "trend": -2.6}, {"name": "장성군", "sido": "전남", "values": [35.6, 27.2, 33.1, 32.5, 33.9, 34.2, 35.1, 32.9, 29.8, 24.0], "mean": 31.83, "max": 35.6, "min": 24.0, "trend": -11.6}, {"name": "완도군", "sido": "전남", "values": [51.4, 52.2, 56.5, 54.8, 57.5, 48.3, 59.2, 67.1, 59.2, 62.7], "mean": 56.89, "max": 67.1, "min": 48.3, "trend": 11.3}, {"name": "진도군", "sido": "전남", "values": [52.6, 55.3, 49.7, 47.2, 55.8, 51.9, 55.1, 58.4, 62.2, 59.4], "mean": 54.76, "max": 62.2, "min": 47.2, "trend": 6.8}, {"name": "신안군", "sido": "전남", "values": [60.4, 71.8, 73.8, 69.4, 58.2, 64.8, 63.4, 65.6, 61.4, 53.1], "mean": 64.19, "max": 73.8, "min": 53.1, "trend": -7.3}, {"name": "포항시", "sido": "경북", "values": [32.7, 35.0, 36.1, 38.8, 37.5, 40.3, 43.1, 42.0, 44.9, 43.5], "mean": 39.39, "max": 44.9, "min": 32.7, "trend": 10.8}, {"name": "경주시", "sido": "경북", "values": [34.8, 36.5, 36.3, 46.1, 41.5, 39.8, 43.0, 42.0, 38.7, 43.8], "mean": 40.25, "max": 46.1, "min": 34.8, "trend": 9.0}, {"name": "김천시", "sido": "경북", "values": [35.5, 39.3, 39.4, 39.7, 34.6, 38.7, 33.4, 35.2, 38.4, 35.6], "mean": 36.98, "max": 39.7, "min": 33.4, "trend": 0.1}, {"name": "안동시", "sido": "경북", "values": [27.3, 30.8, 28.1, 33.8, 38.7, 40.5, 36.6, 32.6, 30.9, 32.7], "mean": 33.2, "max": 40.5, "min": 27.3, "trend": 5.4}, {"name": "구미시", "sido": "경북", "values": [35.0, 37.7, 41.3, 40.0, 35.0, 33.7, 38.1, 36.8, 36.3, 34.5], "mean": 36.84, "max": 41.3, "min": 33.7, "trend": -0.5}, {"name": "영주시", "sido": "경북", "values": [24.6, 27.5, 29.1, 35.1, 31.8, 31.9, 30.3, 37.1, 35.9, 31.3], "mean": 31.46, "max": 37.1, "min": 24.6, "trend": 6.7}, {"name": "영천시", "sido": "경북", "values": [41.0, 40.7, 32.8, 52.2, 48.3, 50.0, 44.7, 40.7, 47.2, 44.1], "mean": 44.17, "max": 52.2, "min": 32.8, "trend": 3.1}, {"name": "상주시", "sido": "경북", "values": [29.2, 32.8, 36.9, 36.2, 24.7, 29.1, 27.7, 29.4, 25.6, 26.9], "mean": 29.85, "max": 36.9, "min": 24.7, "trend": -2.3}, {"name": "문경시", "sido": "경북", "values": [25.0, 29.4, 25.7, 38.6, 37.8, 38.8, 42.2, 42.3, 41.8, 39.1], "mean": 36.07, "max": 42.3, "min": 25.0, "trend": 14.1}, {"name": "경산시", "sido": "경북", "values": [31.8, 34.4, 33.6, 36.7, 35.6, 31.9, 35.2, 34.2, 37.7, 33.9], "mean": 34.5, "max": 37.7, "min": 31.8, "trend": 2.1}, {"name": "의성군", "sido": "경북", "values": [42.4, 45.3, 52.2, 57.0, 48.8, 42.1, 44.9, 49.9, 48.8, 52.6], "mean": 48.4, "max": 57.0, "min": 42.1, "trend": 10.2}, {"name": "청송군", "sido": "경북", "values": [42.6, 52.3, 54.9, 60.0, 48.9, 42.6, 43.3, 41.9, 51.6, 50.1], "mean": 48.82, "max": 60.0, "min": 41.9, "trend": 7.5}, {"name": "영양군", "sido": "경북", "values": [39.5, 39.6, 34.8, 42.6, 40.3, 38.1, 37.5, 42.2, 30.6, 24.6], "mean": 36.98, "max": 42.6, "min": 24.6, "trend": -14.9}, {"name": "영덕군", "sido": "경북", "values": [40.1, 45.9, 45.5, 44.9, 35.9, 44.5, 50.6, 41.9, 38.3, 54.3], "mean": 44.19, "max": 54.3, "min": 35.9, "trend": 14.2}, {"name": "청도군", "sido": "경북", "values": [37.6, 34.4, 35.4, 42.2, 38.6, 38.4, 42.3, 31.3, 31.8, 26.5], "mean": 35.85, "max": 42.3, "min": 26.5, "trend": -11.1}, {"name": "고령군", "sido": "경북", "values": [49.4, 53.4, 55.0, 45.2, 50.5, 53.0, 50.0, 47.8, 53.3, 58.3], "mean": 51.59, "max": 58.3, "min": 45.2, "trend": 8.9}, {"name": "성주군", "sido": "경북", "values": [50.2, 55.5, 60.7, 48.8, 45.3, 49.0, 47.2, 53.9, 49.9, 50.5], "mean": 51.1, "max": 60.7, "min": 45.3, "trend": 0.3}, {"name": "칠곡군", "sido": "경북", "values": [37.2, 35.7, 36.0, 40.8, 38.3, 34.7, 35.9, 39.9, 37.2, 38.2], "mean": 37.39, "max": 40.8, "min": 34.7, "trend": 1.0}, {"name": "예천군", "sido": "경북", "values": [35.6, 32.7, 34.0, 37.0, 37.4, 36.9, 39.0, 39.8, 36.4, 31.4], "mean": 36.02, "max": 39.8, "min": 31.4, "trend": -4.2}, {"name": "봉화군", "sido": "경북", "values": [33.7, 30.3, 37.0, 56.6, 52.6, 51.9, 54.7, 50.1, 51.7, 44.0], "mean": 46.26, "max": 56.6, "min": 30.3, "trend": 10.3}, {"name": "울진군", "sido": "경북", "values": [41.2, 41.5, 50.8, 49.6, 42.3, 40.6, 51.4, 47.3, 39.8, 41.3], "mean": 44.58, "max": 51.4, "min": 39.8, "trend": 0.1}, {"name": "울릉군", "sido": "경북", "values": [71.5, 72.6, 78.4, 67.5, 84.8, 77.0, 71.0, 75.8, 75.7, 66.2], "mean": 74.05, "max": 84.8, "min": 66.2, "trend": -5.3}, {"name": "진주시", "sido": "경남", "values": [29.0, 31.3, 29.3, 33.7, 35.1, 36.6, 33.4, 32.2, 35.0, 31.5], "mean": 32.71, "max": 36.6, "min": 29.0, "trend": 2.5}, {"name": "통영시", "sido": "경남", "values": [34.0, 30.9, 34.2, 37.4, 36.5, 41.4, 38.9, 36.3, 34.3, 31.3], "mean": 35.52, "max": 41.4, "min": 30.9, "trend": -2.7}, {"name": "사천시", "sido": "경남", "values": [27.7, 26.1, 28.1, 40.6, 41.7, 41.2, 39.0, 40.8, 39.7, 39.0], "mean": 36.39, "max": 41.7, "min": 26.1, "trend": 11.3}, {"name": "김해시", "sido": "경남", "values": [37.0, 35.0, 37.1, 40.6, 41.9, 40.4, 39.0, 43.5, 35.3, 35.9], "mean": 38.57, "max": 43.5, "min": 35.0, "trend": -1.1}, {"name": "밀양시", "sido": "경남", "values": [36.7, 45.6, 46.9, 35.9, 35.4, 37.8, 46.9, 45.8, 35.2, 41.4], "mean": 40.76, "max": 46.9, "min": 35.2, "trend": 4.7}, {"name": "거제시", "sido": "경남", "values": [30.9, 34.5, 32.4, 36.7, 37.4, 41.1, 31.3, 34.0, 33.8, 34.3], "mean": 34.64, "max": 41.1, "min": 30.9, "trend": 3.4}, {"name": "양산시", "sido": "경남", "values": [34.8, 34.5, 34.0, 36.5, 36.4, 31.3, 35.1, 33.6, 33.0, 36.9], "mean": 34.61, "max": 36.9, "min": 31.3, "trend": 2.1}, {"name": "창원시", "sido": "경남", "values": [39.3, 38.2, 39.8, 39.1, 37.9, 38.5, 39.5, 36.1, 39.2, 40.2], "mean": 38.78, "max": 40.2, "min": 36.1, "trend": 0.9}, {"name": "의령군", "sido": "경남", "values": [46.3, 53.7, 58.1, 47.1, 47.3, 42.1, 41.3, 56.2, 51.4, 33.7], "mean": 47.72, "max": 58.1, "min": 33.7, "trend": -12.6}, {"name": "함안군", "sido": "경남", "values": [32.2, 38.9, 37.3, 31.1, 31.5, 34.1, 39.5, 41.2, 37.3, 34.8], "mean": 35.79, "max": 41.2, "min": 31.1, "trend": 2.6}, {"name": "창녕군", "sido": "경남", "values": [37.0, 52.8, 52.7, 38.6, 38.3, 41.5, 37.3, 42.7, 40.5, 34.0], "mean": 41.54, "max": 52.8, "min": 34.0, "trend": -3.0}, {"name": "경남 고성군", "sido": "경남", "values": [31.4, 31.7, 31.2, 29.5, 27.0, 30.3, 29.7, 30.9, 27.3, 22.9], "mean": 29.19, "max": 31.7, "min": 22.9, "trend": -8.5}, {"name": "남해군", "sido": "경남", "values": [32.4, 29.5, 31.3, 35.2, 33.9, 34.2, 29.4, 31.7, 20.4, 26.6], "mean": 30.46, "max": 35.2, "min": 20.4, "trend": -5.8}, {"name": "하동군", "sido": "경남", "values": [40.0, 35.5, 37.7, 47.1, 33.7, 36.9, 33.6, 46.5, 37.5, 40.1], "mean": 38.86, "max": 47.1, "min": 33.6, "trend": 0.1}, {"name": "산청군", "sido": "경남", "values": [40.2, 35.9, 32.3, 30.7, 36.5, 34.8, 40.1, 44.8, 42.5, 36.2], "mean": 37.4, "max": 44.8, "min": 30.7, "trend": -4.0}, {"name": "함양군", "sido": "경남", "values": [41.0, 35.6, 36.1, 35.5, 33.2, 36.5, 33.1, 34.1, 28.8, 31.0], "mean": 34.49, "max": 41.0, "min": 28.8, "trend": -10.0}, {"name": "거창군", "sido": "경남", "values": [28.6, 37.7, 26.9, 31.5, 23.0, 27.2, 26.2, 22.0, 28.0, 24.5], "mean": 27.56, "max": 37.7, "min": 22.0, "trend": -4.1}, {"name": "합천군", "sido": "경남", "values": [43.8, 39.8, 42.3, 35.6, 37.3, 50.6, 54.2, 45.5, 55.0, 58.7], "mean": 46.28, "max": 58.7, "min": 35.6, "trend": 14.9}, {"name": "제주시", "sido": "제주", "values": [41.9, 40.4, 40.2, 48.7, 45.8, 43.6, 40.7, 40.8, 43.2, 44.9], "mean": 43.02, "max": 48.7, "min": 40.2, "trend": 3.0}, {"name": "서귀포시", "sido": "제주", "values": [37.4, 37.3, 36.0, 47.8, 48.6, 45.9, 43.1, 40.9, 39.4, 41.5], "mean": 41.79, "max": 48.6, "min": 36.0, "trend": 4.1}], "sido_avg": {"서울": 46.02, "부산": 41.79, "대구": 39.37, "인천": 45.11, "광주": 39.69, "대전": 42.92, "울산": 36.69, "경기": 43.33, "강원": 40.93, "충북": 43.58, "충남": 41.05, "전북": 36.41, "전남": 41.83, "경북": 41.72, "경남": 36.74, "제주": 42.4}};
+const TIMES = RAW["시점"];
+const REGIONS = RAW.regions;
+const SIDO_AVG = RAW.sido_avg;
+const PALETTE = ['#4f8ef7','#f7794f','#4ff7b8','#f7d94f','#c44ff7','#f74f7d','#4ff7f0','#f7af4f','#7df74f','#4f6bf7','#f74fc4','#4fc4f7'];
+const SIDO_COLOR = {"서울":"#4f8ef7","부산":"#f7794f","대구":"#f7d94f","인천":"#4ff7b8","광주":"#c44ff7","대전":"#f74f7d","울산":"#4ff7f0","경기":"#7df74f","강원":"#4f6bf7","충북":"#f7af4f","충남":"#f74fc4","전북":"#4fc4f7","전남":"#f7f74f","경북":"#af4ff7","경남":"#f74faf","제주":"#4fffc8"};
+
+const BASE_OPTS = {
+  responsive:true,
+  plugins:{
+    legend:{labels:{color:'#8b93a8',font:{size:11},boxWidth:12,padding:16}},
+    tooltip:{backgroundColor:'#181d2c',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#e8ecf4',bodyColor:'#8b93a8',padding:12}
+  },
+  scales:{
+    x:{ticks:{color:'#4a5168',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}},
+    y:{ticks:{color:'#4a5168',font:{size:10},callback:v=>v+'%'},grid:{color:'rgba(255,255,255,0.04)'}}
+  }
+};
+
+function mkChart(id,cfg){return new Chart(document.getElementById(id).getContext('2d'),cfg);}
+
+function buildKPI(){
+  const means=REGIONS.map(r=>r.mean);
+  const natAvg=(means.reduce((a,b)=>a+b,0)/means.length).toFixed(2);
+  const minR=REGIONS.reduce((a,b)=>a.mean<b.mean?a:b);
+  const maxR=REGIONS.reduce((a,b)=>a.mean>b.mean?a:b);
+  const rising=REGIONS.filter(r=>r.trend>0).length;
+  const kpis=[
+    {cls:'blue',label:'전국 평균 청년고용률',value:natAvg+'%',sub:'228개 시군구 5년 평균'},
+    {cls:'orange',label:'최저 지역 (5년 평균)',value:minR.mean+'%',sub:minR.name},
+    {cls:'green',label:'최고 지역 (5년 평균)',value:maxR.mean+'%',sub:maxR.name},
+    {cls:'yellow',label:'고용률 상승 지역',value:rising+'개',sub:'2021→2025 상승 추세'},
+  ];
+  document.getElementById('kpiGrid').innerHTML=kpis.map((k,i)=>`<div class="kpi-card ${k.cls}" style="animation-delay:${i*0.08}s"><div class="kpi-label">${k.label}</div><div class="kpi-value ${k.cls}">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
+}
+
+function buildSidoGrid(){
+  const vals=Object.values(SIDO_AVG);
+  const maxV=Math.max(...vals),minV=Math.min(...vals);
+  const sorted=Object.entries(SIDO_AVG).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('sidoGrid').innerHTML=sorted.map(([sido,avg])=>{
+    const pct=((avg-minV)/(maxV-minV)*100).toFixed(0);
+    const col=SIDO_COLOR[sido]||'#4f8ef7';
+    return `<div class="sido-card" onclick="filterBySido('${sido}')"><div class="sido-card-name">${sido}</div><div class="sido-card-val" style="color:${col}">${avg.toFixed(1)}<span style="font-size:14px;color:var(--text3)">%</span></div><div class="sido-card-bar"><div class="sido-card-fill" style="width:${pct}%;background:${col}"></div></div></div>`;
+  }).join('');
+}
+
+function buildSingleLine(canvasId,regionName,color,statId){
+  const r=REGIONS.find(x=>x.name===regionName);
+  mkChart(canvasId,{type:'line',data:{labels:TIMES,datasets:[{label:regionName,data:r.values,borderColor:color,backgroundColor:color+'18',pointBackgroundColor:color,pointRadius:5,tension:0.35,fill:true}]},options:{...BASE_OPTS,plugins:{...BASE_OPTS.plugins,legend:{display:false}}}});
+  if(statId) document.getElementById(statId).innerHTML=`<div class="stat-item">평균 <strong>${r.mean}%</strong></div><div class="stat-item">최고 <strong>${r.max}%</strong></div><div class="stat-item">최저 <strong>${r.min}%</strong></div><div class="stat-item">변화 <strong style="color:${r.trend>=0?'#4ff7b8':'#f7794f'}">${r.trend>=0?'+':''}${r.trend}%p</strong></div>`;
+}
+
+function buildCompare(){
+  const sc=REGIONS.find(x=>x.name==='순창군');
+  const ul=REGIONS.find(x=>x.name==='울릉군');
+  mkChart('chartCompare',{type:'line',data:{labels:TIMES,datasets:[
+    {label:'순창군 (최저)',data:sc.values,borderColor:'#f7794f',backgroundColor:'rgba(247,121,79,0.06)',pointRadius:4,tension:0.3,fill:true},
+    {label:'울릉군 (최고)',data:ul.values,borderColor:'#4ff7b8',backgroundColor:'rgba(79,247,184,0.06)',pointRadius:4,tension:0.3,fill:true}
+  ]},options:BASE_OPTS});
+}
+
+let seoulChart=null;
+function buildSeoul(type='line'){
+  const sr=REGIONS.filter(r=>r.sido==='서울');
+  if(seoulChart) seoulChart.destroy();
+  if(type==='line'){
+    seoulChart=mkChart('chartSeoul',{type:'line',data:{labels:TIMES,datasets:sr.map((r,i)=>({label:r.name.replace('서울 ',''),data:r.values,borderColor:PALETTE[i%PALETTE.length],pointRadius:2,tension:0.3,borderWidth:1.5,pointHoverRadius:4}))},options:BASE_OPTS});
+  } else {
+    seoulChart=mkChart('chartSeoul',{type:'bar',data:{labels:sr.map(r=>r.name.replace('서울 ','')),datasets:[{label:'최신(2025.2/2)',data:sr.map(r=>r.values[r.values.length-1]),backgroundColor:sr.map((_,i)=>PALETTE[i%PALETTE.length]+'cc'),borderRadius:4}]},options:{...BASE_OPTS,plugins:{...BASE_OPTS.plugins,legend:{display:false}}}});
+  }
+}
+function switchSeoulView(view,btn){
+  document.querySelectorAll('#seoulTabs .tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  buildSeoul(view);
+}
+
+function buildRank(){
+  const sidos=[...new Set(REGIONS.map(r=>r.sido))].sort();
+  const sel=document.getElementById('sidoFilter');
+  sidos.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});
+  showRank('top');
+}
+function showRank(mode){
+  document.getElementById('btnTop').classList.toggle('btn-active',mode==='top');
+  document.getElementById('btnBottom').classList.toggle('btn-active',mode==='bottom');
+  const sorted=[...REGIONS].sort((a,b)=>b.mean-a.mean);
+  const list=mode==='top'?sorted.slice(0,20):sorted.slice(-20).reverse();
+  const globalMax=sorted[0].mean;
+  document.getElementById('rankBody').innerHTML=list.map((r,i)=>{
+    const rank=mode==='top'?i+1:sorted.length-list.length+i+1;
+    const pct=(r.mean/globalMax*100).toFixed(0);
+    const fc=mode==='top'?'#4f8ef7':'#f7794f';
+    const tr=r.trend>0?`<span class="trend-up">▲ +${r.trend}</span>`:r.trend<0?`<span class="trend-dn">▼ ${r.trend}</span>`:`<span class="trend-eq">— 0</span>`;
+    return `<tr><td class="rank-num">${rank}</td><td><div class="rank-name">${r.name}</div><div class="rank-sido">${r.sido}</div></td><td class="rank-val" style="color:${fc}">${r.mean}%</td><td class="rank-bar-wrap"><div class="rank-bar"><div class="rank-bar-fill" style="width:${pct}%;background:${fc}"></div></div></td><td>${tr}</td></tr>`;
+  }).join('');
+}
+
+let selectedRegions=[];
+let detailChart=null;
+function onSearch(q){renderSearchResults(q,document.getElementById('sidoFilter').value);}
+function onSidoFilter(sido){renderSearchResults(document.getElementById('regionSearch').value,sido);}
+function renderSearchResults(q,sido){
+  let list=REGIONS;
+  if(sido) list=list.filter(r=>r.sido===sido);
+  if(q) list=list.filter(r=>r.name.includes(q));
+  document.getElementById('searchResults').innerHTML=list.slice(0,30).map(r=>`<tr style="cursor:pointer" onclick="addRegion('${r.name}')"><td class="rank-name">${r.name}</td><td style="font-size:11px;color:var(--text3)">${r.sido}</td><td class="rank-val" style="color:var(--accent)">${r.mean}%</td></tr>`).join('');
+}
+function addRegion(name){
+  if(selectedRegions.includes(name)||selectedRegions.length>=6) return;
+  selectedRegions.push(name);
+  renderDetailChart();renderTags();
+}
+function removeRegion(name){
+  selectedRegions=selectedRegions.filter(x=>x!==name);
+  renderDetailChart();renderTags();
+}
+function renderTags(){
+  document.getElementById('selectedTags').innerHTML=selectedRegions.map((name,i)=>`<div class="tag selected" onclick="removeRegion('${name}')"><span class="tag-dot" style="background:${PALETTE[i%PALETTE.length]}"></span>${name}<span class="tag-x">×</span></div>`).join('');
+}
+function renderDetailChart(){
+  if(detailChart) detailChart.destroy();
+  if(!selectedRegions.length) return;
+  const datasets=selectedRegions.map((name,i)=>{const r=REGIONS.find(x=>x.name===name);const col=PALETTE[i%PALETTE.length];return{label:name,data:r.values,borderColor:col,backgroundColor:col+'18',pointRadius:4,tension:0.3,fill:false};});
+  detailChart=mkChart('chartDetail',{type:'line',data:{labels:TIMES,datasets},options:BASE_OPTS});
+}
+function filterBySido(sido){
+  document.getElementById('sidoFilter').value=sido;
+  document.getElementById('regionSearch').value='';
+  renderSearchResults('',sido);
+  document.getElementById('sidoFilter').scrollIntoView({behavior:'smooth'});
+}
+
+function buildHist(){
+  const means=REGIONS.map(r=>r.mean);
+  const bins=[];for(let v=15;v<=80;v+=5) bins.push(v);
+  const counts=bins.map(b=>means.filter(m=>m>=b&&m<b+5).length);
+  mkChart('chartHist',{type:'bar',data:{labels:bins.map(b=>`${b}~${b+5}%`),datasets:[{label:'지역 수',data:counts,backgroundColor:bins.map(b=>{const mid=b+2.5;if(mid<30)return '#f7794f99';if(mid>60)return '#4ff7b899';return '#4f8ef799';}),borderRadius:4}]},options:{...BASE_OPTS,plugins:{...BASE_OPTS.plugins,legend:{display:false},tooltip:{...BASE_OPTS.plugins.tooltip,callbacks:{label:ctx=>`${ctx.raw}개 지역`}}},scales:{x:BASE_OPTS.scales.x,y:{...BASE_OPTS.scales.y,ticks:{color:'#4a5168',font:{size:10},callback:v=>v+'개'}}}}});
+}
+
+function buildTrend(){
+  const sorted=[...REGIONS].sort((a,b)=>b.trend-a.trend);
+  const combined=[...sorted.slice(0,10),...sorted.slice(-10).reverse()];
+  mkChart('chartTrend',{type:'bar',data:{labels:combined.map(r=>r.name),datasets:[{label:'변화량(%p)',data:combined.map(r=>r.trend),backgroundColor:combined.map(r=>r.trend>=0?'#4ff7b8aa':'#f7794faa'),borderRadius:4}]},options:{...BASE_OPTS,plugins:{...BASE_OPTS.plugins,legend:{display:false}},scales:{x:{ticks:{color:'#4a5168',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}},y:{...BASE_OPTS.scales.y,ticks:{color:'#4a5168',font:{size:10},callback:v=>(v>=0?'+':'')+v+'%p'}}}}});
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  buildKPI();
+  buildSidoGrid();
+  buildSingleLine('chartSunchang','순창군','#f7794f','sunchangStats');
+  buildSingleLine('chartUlleung','울릉군','#4ff7b8','ulleungStats');
+  buildCompare();
+  buildSeoul('line');
+  buildRank();
+  buildHist();
+  buildTrend();
+  renderSearchResults('','');
+});
+</script>
+</body>
+</html>
